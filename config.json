@@ -1,0 +1,35 @@
+{
+  "security": {
+    "adminPassword": "Transport2024!",
+    "dbEncryptionKey": "IdTrackTransportKinshasa2024SecretKey"
+  },
+  "database": {
+    "host": "localhost",
+    "user": "root",
+    "password": "",
+    "database": "idtrack_db",
+    "port": 3306
+  },
+  "app": {
+    "title": "IdTrack - Identification Agents Terrain",
+    "version": "1.0.0",
+    "province": "Ministère Provincial de Transport et Mobilité Urbaine - Kinshasa"
+  },
+  "idFormat": {
+    "prefix": "MPTMU-KIN",
+    "startNumber": 1,
+    "padding": 6
+  },
+  "export": {
+    "cartesPath": "./exports/cartes/",
+    "csvPath": "./exports/csv/"
+  },
+  "colors": {
+    "primary": "#00A896",
+    "background": "#F0F0F0",
+    "cardBg": "#FFFFFF",
+    "inactive": "#E0E0E0",
+    "text": "#333333"
+  }
+}
+
