@@ -86,8 +86,10 @@ const Database = {
           id_agent, matricule, nom, prenom, post_nom, sexe, date_naissance, lieu_naissance, nationalite, telephone, email, adresse,
           photo, categorie, bureau, cellule, grade, fonction, date_affectation, ref_affectation, zone_affectation, lieu_affectation,
           empreinte_digitale, document_cni, document_carte_electeur,
-          qr_code, uuid, statut, situation_prime
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          qr_code, uuid, statut, situation_prime,
+          arrete, commission_affectation_sg, commission_affectation_locale, notification_fonc_publique_ville,
+          commission_local_fonc_publique_ville, notification_nu
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           idAgent,
           matricule,
@@ -117,7 +119,13 @@ const Database = {
           data.qr_code || '',
           agentUuid,
           data.statut || 'actif',
-          data.situation_prime || 'NP'
+          data.situation_prime || 'NP',
+          data.arrete ? 1 : 0,
+          data.commission_affectation_sg ? 1 : 0,
+          data.commission_affectation_locale ? 1 : 0,
+          data.notification_fonc_publique_ville ? 1 : 0,
+          data.commission_local_fonc_publique_ville ? 1 : 0,
+          data.notification_nu ? 1 : 0
         ]
       );
 
@@ -207,6 +215,8 @@ const Database = {
          a.bureau, a.cellule, a.grade, a.fonction, a.date_affectation, a.ref_affectation, 
          a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, a.situation_prime,
          a.date_enregistrement, a.photo, a.document_cni, a.document_carte_electeur,
+         a.arrete, a.commission_affectation_sg, a.commission_affectation_locale, a.notification_fonc_publique_ville,
+         a.commission_local_fonc_publique_ville, a.notification_nu,
          b.nom AS bureau_nom, c.nom AS cellule_nom
          FROM agents a
          LEFT JOIN bureaux b ON (a.bureau = b.id OR a.bureau = b.nom)
@@ -229,6 +239,8 @@ const Database = {
          a.bureau, a.cellule, a.grade, a.fonction, a.date_affectation, a.ref_affectation, 
          a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, a.situation_prime,
          a.date_enregistrement, a.photo, a.document_cni, a.document_carte_electeur,
+         a.arrete, a.commission_affectation_sg, a.commission_affectation_locale, a.notification_fonc_publique_ville,
+         a.commission_local_fonc_publique_ville, a.notification_nu,
          b.nom AS bureau_nom, c.nom AS cellule_nom
          FROM agents a
          LEFT JOIN bureaux b ON (a.bureau = b.id OR a.bureau = b.nom)
@@ -386,6 +398,30 @@ const Database = {
       if (data.situation_prime !== undefined) {
         updateFields.push('situation_prime = ?');
         updateValues.push(data.situation_prime);
+      }
+      if (data.arrete !== undefined) {
+        updateFields.push('arrete = ?');
+        updateValues.push(data.arrete ? 1 : 0);
+      }
+      if (data.commission_affectation_sg !== undefined) {
+        updateFields.push('commission_affectation_sg = ?');
+        updateValues.push(data.commission_affectation_sg ? 1 : 0);
+      }
+      if (data.commission_affectation_locale !== undefined) {
+        updateFields.push('commission_affectation_locale = ?');
+        updateValues.push(data.commission_affectation_locale ? 1 : 0);
+      }
+      if (data.notification_fonc_publique_ville !== undefined) {
+        updateFields.push('notification_fonc_publique_ville = ?');
+        updateValues.push(data.notification_fonc_publique_ville ? 1 : 0);
+      }
+      if (data.commission_local_fonc_publique_ville !== undefined) {
+        updateFields.push('commission_local_fonc_publique_ville = ?');
+        updateValues.push(data.commission_local_fonc_publique_ville ? 1 : 0);
+      }
+      if (data.notification_nu !== undefined) {
+        updateFields.push('notification_nu = ?');
+        updateValues.push(data.notification_nu ? 1 : 0);
       }
       if (data.empreinte_digitale !== undefined) {
         updateFields.push('empreinte_digitale = ?');

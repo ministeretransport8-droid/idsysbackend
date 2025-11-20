@@ -84,6 +84,17 @@ router.post('/', authenticate, upload.fields([
       document_carte_electeur: req.files?.document_carte_electeur?.[0] ? `/uploads/documents/${req.files.document_carte_electeur[0].filename}` : null
     };
 
+    // Convertir les valeurs booléennes des checkboxes (reçues comme chaînes depuis FormData)
+    const booleanFields = [
+      'arrete', 'commission_affectation_sg', 'commission_affectation_locale',
+      'notification_fonc_publique_ville', 'commission_local_fonc_publique_ville', 'notification_nu'
+    ];
+    booleanFields.forEach(field => {
+      if (agentData[field] !== undefined) {
+        agentData[field] = agentData[field] === 'true' || agentData[field] === true || agentData[field] === '1' || agentData[field] === 1;
+      }
+    });
+
     console.log('💾 Chemins de fichiers à sauvegarder:');
     console.log('  - Photo:', agentData.photo || 'NULL');
     console.log('  - Document CNI:', agentData.document_cni || 'NULL');
