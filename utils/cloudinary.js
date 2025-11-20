@@ -1,12 +1,26 @@
 const cloudinary = require('cloudinary').v2;
 const config = require('../config');
 
+// Vérifier que les credentials Cloudinary sont configurés
+if (!config.cloudinary.cloud_name || config.cloudinary.cloud_name === 'root' || 
+    !config.cloudinary.api_key || !config.cloudinary.api_secret) {
+  console.error('⚠️  ERREUR: Configuration Cloudinary manquante ou invalide!');
+  console.error('   Veuillez configurer les variables suivantes dans .env ou config.json:');
+  console.error('   - CLOUDINARY_CLOUD_NAME (votre nom de cloud Cloudinary)');
+  console.error('   - CLOUDINARY_API_KEY (votre clé API)');
+  console.error('   - CLOUDINARY_API_SECRET (votre secret API)');
+  console.error('   Obtenez ces informations sur: https://cloudinary.com/console');
+  throw new Error('Configuration Cloudinary manquante. Veuillez configurer CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY et CLOUDINARY_API_SECRET.');
+}
+
 // Configuration Cloudinary
 cloudinary.config({
-  cloud_name: config.cloudinary.cloud_name || 'root',
+  cloud_name: config.cloudinary.cloud_name,
   api_key: config.cloudinary.api_key,
   api_secret: config.cloudinary.api_secret
 });
+
+console.log(`✓ Cloudinary configuré avec cloud_name: ${config.cloudinary.cloud_name}`);
 
 /**
  * Upload une image vers Cloudinary

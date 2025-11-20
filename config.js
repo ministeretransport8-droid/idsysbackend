@@ -48,9 +48,10 @@ const config = {
     text: configJson.colors?.text || '#333333'
   },
   cloudinary: {
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || configJson.cloudinary?.cloud_name || 'root',
-    api_key: process.env.CLOUDINARY_API_KEY || configJson.cloudinary?.api_key || '172267485622925',
-    api_secret: process.env.CLOUDINARY_API_SECRET || configJson.cloudinary?.api_secret || '6IkagV_iy4ms1XTRGJ-m8CEroi8'
+    // Utiliser uniquement config.json pour Cloudinary (pas de variables d'environnement)
+    cloud_name: configJson.cloudinary?.cloud_name,
+    api_key: configJson.cloudinary?.api_key,
+    api_secret: configJson.cloudinary?.api_secret
   }
 };
 
