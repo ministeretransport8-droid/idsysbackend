@@ -477,6 +477,39 @@ const Database = {
     }
   },
 
+  addBureau: async function (data) {
+    try {
+      const [result] = await pool.query(
+        `INSERT INTO bureaux (nom, code, description, adresse, telephone, email, responsable, statut)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          data.nom,
+          data.code || null,
+          data.description || null,
+          data.adresse || null,
+          data.telephone || null,
+          data.email || null,
+          data.responsable || null,
+          data.statut || 'actif'
+        ]
+      );
+
+      return {
+        id: result.insertId,
+        nom: data.nom,
+        code: data.code || null,
+        description: data.description || null,
+        adresse: data.adresse || null,
+        telephone: data.telephone || null,
+        email: data.email || null,
+        responsable: data.responsable || null,
+        statut: data.statut || 'actif'
+      };
+    } catch (error) {
+      throw error;
+    }
+  },
+
   getAllCellules: async function () {
     try {
       const [rows] = await pool.query(
