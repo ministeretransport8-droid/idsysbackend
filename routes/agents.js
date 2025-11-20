@@ -6,6 +6,7 @@ const QRCodeGenerator = require('../utils/qrcode');
 const PDFGenerator = require('../utils/pdf-generator');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { processFileField } = require('../utils/file-helper');
+const { uploadMultipleImages } = require('../utils/cloudinary');
 
 const path = require('path');
 const fs = require('fs');
@@ -64,24 +65,49 @@ const upload = multer({
 // Créer un agent (nécessite authentification)
 router.post('/', authenticate, upload.fields([
   { name: 'photo', maxCount: 1 },
-  { name: 'document_cni', maxCount: 1 },
-  { name: 'document_carte_electeur', maxCount: 1 }
+  { name: 'documents', maxCount: 10 } // Permettre jusqu'à 10 documents
 ]), async (req, res) => {
   try {
     // Log pour débogage
     console.log('\n📤 Nouvel agent en cours d\'enregistrement...');
     console.log('📁 Fichiers reçus:');
     console.log('  - Photo:', req.files?.photo?.[0]?.filename || 'Aucune');
-    console.log('  - Document CNI:', req.files?.document_cni?.[0]?.filename || 'Aucun');
-    console.log('  - Carte électeur:', req.files?.document_carte_electeur?.[0]?.filename || 'Aucune');
-    console.log('📝 Données:', JSON.stringify(req.body, null, 2));
+    console.log('  - Documents:', req.files?.documents?.length || 0);
 
-    // Préparer les données de l'agent avec les chemins des fichiers
+    // Upload de la photo vers Cloudinary
+    let photoUrl = null;
+    if (req.files?.photo?.[0]) {
+      try {
+        const photoResult = await uploadMultipleImages(
+          [req.files.photo[0]],
+          'idtrack/photos'
+        );
+        if (photoResult[0] && !photoResult[0].error) {
+          photoUrl = photoResult[0].url;
+        }
+      } catch (error) {
+        console.error('Erreur upload photo Cloudinary:', error);
+      }
+    }
+
+    // Upload des documents vers Cloudinary
+    let documentUrls = [];
+    if (req.files?.documents && req.files.documents.length > 0) {
+      try {
+        const uploadResults = await uploadMultipleImages(
+          req.files.documents,
+          'idtrack/documents'
+        );
+        documentUrls = uploadResults.filter(r => !r.error);
+      } catch (error) {
+        console.error('Erreur upload documents Cloudinary:', error);
+      }
+    }
+
+    // Préparer les données de l'agent
     const agentData = {
       ...req.body,
-      photo: req.files?.photo?.[0] ? `/uploads/photos/${req.files.photo[0].filename}` : null,
-      document_cni: req.files?.document_cni?.[0] ? `/uploads/documents/${req.files.document_cni[0].filename}` : null,
-      document_carte_electeur: req.files?.document_carte_electeur?.[0] ? `/uploads/documents/${req.files.document_carte_electeur[0].filename}` : null
+      photo: photoUrl
     };
 
     // Convertir les valeurs booléennes des checkboxes (reçues comme chaînes depuis FormData)
@@ -95,13 +121,52 @@ router.post('/', authenticate, upload.fields([
       }
     });
 
-    console.log('💾 Chemins de fichiers à sauvegarder:');
-    console.log('  - Photo:', agentData.photo || 'NULL');
-    console.log('  - Document CNI:', agentData.document_cni || 'NULL');
-    console.log('  - Carte électeur:', agentData.document_carte_electeur || 'NULL');
+    console.log('💾 URLs Cloudinary:');
+    console.log('  - Photo:', photoUrl || 'NULL');
+    console.log('  - Documents:', documentUrls.length);
 
     const result = await Database.addAgent(agentData);
     console.log('✅ Agent enregistré avec succès:', result.matricule);
+
+    // Sauvegarder les documents dans la table agent_documents
+    if (documentUrls.length > 0) {
+      const connection = Database.getConnection();
+      // Récupérer l'ID de l'agent depuis la base de données
+      const [agentRows] = await connection.query(
+        'SELECT id FROM agents WHERE matricule = ? OR id_agent = ?',
+        [result.matricule, result.id_agent || result.id]
+      );
+      const agentId = agentRows[0]?.id;
+
+      if (agentId) {
+        for (let i = 0; i < documentUrls.length; i++) {
+          const doc = documentUrls[i];
+          try {
+            await connection.query(
+              `INSERT INTO agent_documents 
+               (agent_id, agent_matricule, document_type, cloudinary_url, cloudinary_public_id, 
+                file_name, file_size, file_format, width, height, upload_order)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                agentId,
+                result.matricule,
+                'document',
+                doc.url,
+                doc.public_id,
+                doc.name || `Document ${i + 1}`,
+                doc.bytes || null,
+                doc.format || null,
+                doc.width || null,
+                doc.height || null,
+                i
+              ]
+            );
+          } catch (error) {
+            console.error(`Erreur lors de la sauvegarde du document ${i + 1}:`, error);
+          }
+        }
+      }
+    }
     
     // Générer le QR Code sécurisé
     const qrResult = await QRCodeGenerator.generateSecureQR({

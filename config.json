@@ -30,6 +30,11 @@
     "cardBg": "#FFFFFF",
     "inactive": "#E0E0E0",
     "text": "#333333"
+  },
+  "cloudinary": {
+    "cloud_name": "root",
+    "api_key": "172267485622925",
+    "api_secret": "6IkagV_iy4ms1XTRGJ-m8CEroi8"
   }
 }
 

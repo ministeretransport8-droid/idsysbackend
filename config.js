@@ -46,6 +46,11 @@ const config = {
     cardBg: configJson.colors?.cardBg || '#FFFFFF',
     inactive: configJson.colors?.inactive || '#E0E0E0',
     text: configJson.colors?.text || '#333333'
+  },
+  cloudinary: {
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || configJson.cloudinary?.cloud_name || 'root',
+    api_key: process.env.CLOUDINARY_API_KEY || configJson.cloudinary?.api_key || '172267485622925',
+    api_secret: process.env.CLOUDINARY_API_SECRET || configJson.cloudinary?.api_secret || '6IkagV_iy4ms1XTRGJ-m8CEroi8'
   }
 };
 
