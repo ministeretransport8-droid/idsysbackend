@@ -11,75 +11,47 @@ const { uploadMultipleImages } = require('../utils/cloudinary');
 const path = require('path');
 const fs = require('fs');
 
-// Configuration de multer pour sauvegarder les fichiers sur le disque
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    let uploadPath = '';
-    if (file.fieldname === 'photo') {
-      uploadPath = './uploads/photos';
-    } else if (file.fieldname === 'document_cni' || file.fieldname === 'document_carte_electeur') {
-      uploadPath = './uploads/documents';
-    } else {
-      uploadPath = './uploads';
-    }
-    
-    // Créer le dossier s'il n'existe pas
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    // Générer un nom de fichier unique avec timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  }
-});
+// Configuration de multer pour stocker les fichiers en mémoire (pour Cloudinary)
+// On n'a plus besoin de sauvegarder localement puisque tout va sur Cloudinary
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB max par fichier
+    fileSize: 10 * 1024 * 1024, // 10MB max par fichier
+    files: 11 // 1 photo + 10 documents max
   },
   fileFilter: function (req, file, cb) {
-    // Accepter seulement les images pour la photo
-    if (file.fieldname === 'photo') {
-      if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-      } else {
-        cb(new Error('Seules les images sont acceptées pour la photo'));
-      }
+    // Accepter seulement les images
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
     } else {
-      // Pour les documents, accepter images et PDF
-      if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
-        cb(null, true);
-      } else {
-        cb(new Error('Format de fichier non supporté'));
-      }
+      cb(new Error('Seules les images sont acceptées'));
     }
   }
 });
 
 // Créer un agent (nécessite authentification)
-router.post('/', authenticate, upload.fields([
-  { name: 'photo', maxCount: 1 },
-  { name: 'documents', maxCount: 10 } // Permettre jusqu'à 10 documents
-]), async (req, res) => {
+// Utiliser upload.any() pour accepter tous les fichiers (photo + documents multiples)
+router.post('/', authenticate, upload.any(), async (req, res) => {
   try {
     // Log pour débogage
     console.log('\n📤 Nouvel agent en cours d\'enregistrement...');
-    console.log('📁 Fichiers reçus:');
-    console.log('  - Photo:', req.files?.photo?.[0]?.filename || 'Aucune');
-    console.log('  - Documents:', req.files?.documents?.length || 0);
+    console.log('📁 Fichiers reçus:', req.files?.length || 0);
+    
+    // Séparer la photo des documents
+    const photoFile = req.files?.find(file => file.fieldname === 'photo');
+    const documentFiles = req.files?.filter(file => file.fieldname === 'documents') || [];
+    
+    console.log('  - Photo:', photoFile?.originalname || 'Aucune');
+    console.log('  - Documents:', documentFiles.length);
 
     // Upload de la photo vers Cloudinary
     let photoUrl = null;
-    if (req.files?.photo?.[0]) {
+    if (photoFile) {
       try {
         const photoResult = await uploadMultipleImages(
-          [req.files.photo[0]],
+          [photoFile],
           'idtrack/photos'
         );
         if (photoResult[0] && !photoResult[0].error) {
@@ -92,10 +64,10 @@ router.post('/', authenticate, upload.fields([
 
     // Upload des documents vers Cloudinary
     let documentUrls = [];
-    if (req.files?.documents && req.files.documents.length > 0) {
+    if (documentFiles.length > 0) {
       try {
         const uploadResults = await uploadMultipleImages(
-          req.files.documents,
+          documentFiles,
           'idtrack/documents'
         );
         documentUrls = uploadResults.filter(r => !r.error);
