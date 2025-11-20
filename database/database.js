@@ -83,16 +83,17 @@ const Database = {
 
       const [result] = await pool.query(
         `INSERT INTO agents (
-          id_agent, matricule, nom, prenom, sexe, date_naissance, lieu_naissance, nationalite, telephone, email, adresse,
+          id_agent, matricule, nom, prenom, post_nom, sexe, date_naissance, lieu_naissance, nationalite, telephone, email, adresse,
           photo, categorie, bureau, cellule, grade, fonction, date_affectation, ref_affectation, zone_affectation, lieu_affectation,
           empreinte_digitale, document_cni, document_carte_electeur,
-          qr_code, uuid, statut
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          qr_code, uuid, statut, situation_prime
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           idAgent,
           matricule,
           data.nom,
           data.prenom,
+          data.post_nom || null,
           data.sexe,
           data.date_naissance,
           data.lieu_naissance,
@@ -115,7 +116,8 @@ const Database = {
           data.document_carte_electeur || null, // Stocker le chemin du fichier
           data.qr_code || '',
           agentUuid,
-          data.statut || 'actif'
+          data.statut || 'actif',
+          data.situation_prime || 'NP'
         ]
       );
 
@@ -200,10 +202,10 @@ const Database = {
   searchAgents: async function (searchTerm) {
     try {
       const [rows] = await pool.query(
-        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.sexe, a.date_naissance, a.lieu_naissance, 
+        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.date_naissance, a.lieu_naissance, 
          a.nationalite, a.telephone, a.email, a.adresse, a.categorie, 
          a.bureau, a.cellule, a.grade, a.fonction, a.date_affectation, a.ref_affectation, 
-         a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, 
+         a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, a.situation_prime,
          a.date_enregistrement, a.photo, a.document_cni, a.document_carte_electeur,
          b.nom AS bureau_nom, c.nom AS cellule_nom
          FROM agents a
@@ -222,10 +224,10 @@ const Database = {
   getAllAgents: async function () {
     try {
       const [rows] = await pool.query(
-        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.sexe, a.date_naissance, a.lieu_naissance, 
+        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.date_naissance, a.lieu_naissance, 
          a.nationalite, a.telephone, a.email, a.adresse, a.categorie, 
          a.bureau, a.cellule, a.grade, a.fonction, a.date_affectation, a.ref_affectation, 
-         a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, 
+         a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, a.situation_prime,
          a.date_enregistrement, a.photo, a.document_cni, a.document_carte_electeur,
          b.nom AS bureau_nom, c.nom AS cellule_nom
          FROM agents a
@@ -241,10 +243,10 @@ const Database = {
   getAgentByMatricule: async function (matricule) {
     try {
       const [rows] = await pool.query(
-        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.sexe, a.date_naissance, a.lieu_naissance, 
+        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.date_naissance, a.lieu_naissance, 
          a.nationalite, a.telephone, a.email, a.adresse, a.categorie, 
          a.bureau, a.cellule, a.grade, a.fonction, a.date_affectation, a.ref_affectation, 
-         a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, 
+         a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, a.situation_prime,
          a.date_enregistrement, a.photo, a.document_cni, a.document_carte_electeur,
          b.nom AS bureau_nom, c.nom AS cellule_nom
          FROM agents a
@@ -262,10 +264,10 @@ const Database = {
   getAgentById: async function (id) {
     try {
       const [rows] = await pool.query(
-        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.sexe, a.date_naissance, a.lieu_naissance, 
+        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.date_naissance, a.lieu_naissance, 
          a.nationalite, a.telephone, a.email, a.adresse, a.categorie, 
          a.bureau, a.cellule, a.grade, a.fonction, a.date_affectation, a.ref_affectation, 
-         a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, 
+         a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, a.situation_prime,
          a.date_enregistrement, a.photo, a.document_cni, a.document_carte_electeur,
          b.nom AS bureau_nom, c.nom AS cellule_nom
          FROM agents a
@@ -300,6 +302,10 @@ const Database = {
       if (data.prenom !== undefined) {
         updateFields.push('prenom = ?');
         updateValues.push(data.prenom);
+      }
+      if (data.post_nom !== undefined) {
+        updateFields.push('post_nom = ?');
+        updateValues.push(data.post_nom);
       }
       if (data.sexe !== undefined) {
         updateFields.push('sexe = ?');
@@ -376,6 +382,10 @@ const Database = {
       if (data.lieu_affectation !== undefined) {
         updateFields.push('lieu_affectation = ?');
         updateValues.push(data.lieu_affectation);
+      }
+      if (data.situation_prime !== undefined) {
+        updateFields.push('situation_prime = ?');
+        updateValues.push(data.situation_prime);
       }
       if (data.empreinte_digitale !== undefined) {
         updateFields.push('empreinte_digitale = ?');
