@@ -510,6 +510,41 @@ const Database = {
     }
   },
 
+  addCellule: async function (data) {
+    try {
+      const [result] = await pool.query(
+        `INSERT INTO cellules (nom, code, bureau_id, description, adresse, telephone, email, responsable, statut)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          data.nom,
+          data.code || null,
+          data.bureau_id || null,
+          data.description || null,
+          data.adresse || null,
+          data.telephone || null,
+          data.email || null,
+          data.responsable || null,
+          data.statut || 'actif'
+        ]
+      );
+
+      return {
+        id: result.insertId,
+        nom: data.nom,
+        code: data.code,
+        bureau_id: data.bureau_id,
+        description: data.description,
+        adresse: data.adresse,
+        telephone: data.telephone,
+        email: data.email,
+        responsable: data.responsable,
+        statut: data.statut || 'actif'
+      };
+    } catch (error) {
+      throw error;
+    }
+  },
+
   getAllCellules: async function () {
     try {
       const [rows] = await pool.query(
