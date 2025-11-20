@@ -241,10 +241,13 @@ const Database = {
          a.date_enregistrement, a.photo, a.document_cni, a.document_carte_electeur,
          a.arrete, a.commission_affectation_sg, a.commission_affectation_locale, a.notification_fonc_publique_ville,
          a.commission_local_fonc_publique_ville, a.notification_nu,
-         b.nom AS bureau_nom, c.nom AS cellule_nom
+         b.nom AS bureau_nom, c.nom AS cellule_nom,
+         COUNT(DISTINCT ad.id) AS documents_count
          FROM agents a
          LEFT JOIN bureaux b ON (a.bureau = b.id OR a.bureau = b.nom)
-         LEFT JOIN cellules c ON (a.cellule = c.id OR a.cellule = c.nom)`
+         LEFT JOIN cellules c ON (a.cellule = c.id OR a.cellule = c.nom)
+         LEFT JOIN agent_documents ad ON (ad.agent_id = a.id OR ad.agent_matricule = a.matricule)
+         GROUP BY a.id`
       );
       return rows;
     } catch (error) {
@@ -289,6 +292,22 @@ const Database = {
         [id]
       );
       return rows[0] || null;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getAgentDocuments: async function (agentId) {
+    try {
+      const [rows] = await pool.query(
+        `SELECT id, agent_id, agent_matricule, document_type, cloudinary_url, cloudinary_public_id,
+         file_name, file_size, file_format, width, height, upload_order, date_upload
+         FROM agent_documents
+         WHERE agent_id = ? OR agent_matricule = ?
+         ORDER BY upload_order ASC, date_upload ASC`,
+        [agentId, agentId]
+      );
+      return rows;
     } catch (error) {
       throw error;
     }

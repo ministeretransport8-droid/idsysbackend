@@ -322,6 +322,21 @@ router.get('/carte/:matricule', authenticate, async (req, res) => {
   }
 });
 
+// Obtenir les documents d'un agent (nécessite authentification)
+router.get('/:id/documents', authenticate, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: 'ID invalide' });
+    }
+
+    const documents = await Database.getAgentDocuments(id);
+    res.json({ success: true, data: documents });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Obtenir un agent par ID (avec photos) (nécessite authentification)
 router.get('/:id', authenticate, async (req, res) => {
   try {
@@ -336,6 +351,10 @@ router.get('/:id', authenticate, async (req, res) => {
       agent.photo = processFileField(agent.photo, req);
       agent.document_cni = processFileField(agent.document_cni, req);
       agent.document_carte_electeur = processFileField(agent.document_carte_electeur, req);
+      
+      // Récupérer les documents Cloudinary
+      const documents = await Database.getAgentDocuments(id);
+      agent.documents = documents || [];
       
       res.json({ success: true, data: agent });
     } else {
