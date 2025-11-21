@@ -83,13 +83,13 @@ const Database = {
 
       const [result] = await pool.query(
         `INSERT INTO agents (
-          id_agent, matricule, nom, prenom, post_nom, sexe, etat_civil, titre_academique, date_naissance, lieu_naissance, nationalite, telephone, email, adresse,
+          id_agent, matricule, nom, prenom, post_nom, sexe, etat_civil, titre_academique, filiere, date_naissance, lieu_naissance, nationalite, telephone, email, adresse,
           photo, categorie, bureau, cellule, grade, fonction, date_affectation, ref_affectation, zone_affectation, lieu_affectation,
           empreinte_digitale, document_cni, document_carte_electeur,
           qr_code, uuid, statut, situation_prime,
           arrete, commission_affectation_sg, commission_affectation_locale, notification_fonc_publique_ville,
           commission_local_fonc_publique_ville, notification_nu
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           idAgent,
           matricule,
@@ -99,6 +99,7 @@ const Database = {
           data.sexe,
           data.etat_civil || null,
           data.titre_academique || null,
+          data.filiere || null,
           data.date_naissance,
           data.lieu_naissance,
           data.nationalite || 'Congolaise',
@@ -212,7 +213,7 @@ const Database = {
   searchAgents: async function (searchTerm) {
     try {
       const [rows] = await pool.query(
-        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.etat_civil, a.titre_academique, 
+        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.etat_civil, a.titre_academique, a.filiere,
          a.date_naissance, a.lieu_naissance, a.nationalite, a.telephone, a.email, a.adresse, a.categorie, 
          a.bureau, a.cellule, a.grade, a.fonction, a.date_affectation, a.ref_affectation, 
          a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, a.situation_prime,
@@ -236,7 +237,7 @@ const Database = {
   getAllAgents: async function () {
     try {
       const [rows] = await pool.query(
-        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.etat_civil, a.titre_academique, 
+        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.etat_civil, a.titre_academique, a.filiere,
          a.date_naissance, a.lieu_naissance, a.nationalite, a.telephone, a.email, a.adresse, a.categorie, 
          a.bureau, a.cellule, a.grade, a.fonction, a.date_affectation, a.ref_affectation, 
          a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, a.situation_prime,
@@ -260,7 +261,7 @@ const Database = {
   getAgentByMatricule: async function (matricule) {
     try {
       const [rows] = await pool.query(
-        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.date_naissance, a.lieu_naissance, 
+        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.etat_civil, a.titre_academique, a.filiere, a.date_naissance, a.lieu_naissance, 
          a.nationalite, a.telephone, a.email, a.adresse, a.categorie, 
          a.bureau, a.cellule, a.grade, a.fonction, a.date_affectation, a.ref_affectation, 
          a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, a.situation_prime,
@@ -281,7 +282,7 @@ const Database = {
   getAgentById: async function (id) {
     try {
       const [rows] = await pool.query(
-        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.etat_civil, a.titre_academique, 
+        `SELECT a.id, a.id_agent, a.matricule, a.nom, a.prenom, a.post_nom, a.sexe, a.etat_civil, a.titre_academique, a.filiere,
          a.date_naissance, a.lieu_naissance, a.nationalite, a.telephone, a.email, a.adresse, a.categorie, 
          a.bureau, a.cellule, a.grade, a.fonction, a.date_affectation, a.ref_affectation, 
          a.zone_affectation, a.lieu_affectation, a.empreinte_digitale, a.qr_code, a.uuid, a.statut, a.situation_prime,
@@ -351,6 +352,10 @@ const Database = {
       if (data.titre_academique !== undefined) {
         updateFields.push('titre_academique = ?');
         updateValues.push(data.titre_academique);
+      }
+      if (data.filiere !== undefined) {
+        updateFields.push('filiere = ?');
+        updateValues.push(data.filiere);
       }
       if (data.date_naissance !== undefined) {
         updateFields.push('date_naissance = ?');

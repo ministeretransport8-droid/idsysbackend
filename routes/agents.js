@@ -408,7 +408,7 @@ router.put('/:id', authenticate, async (req, res) => {
 });
 
 // Mettre à jour un agent (partiel) (nécessite authentification)
-router.patch('/:id', authenticate, async (req, res) => {
+router.patch('/:id', authenticate, upload.single('photo'), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -421,10 +421,36 @@ router.patch('/:id', authenticate, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Agent non trouvé' });
     }
 
-    const result = await Database.updateAgent(id, req.body);
+    // Préparer les données de mise à jour
+    const updateData = { ...req.body };
+
+    // Si une nouvelle photo est fournie, l'uploader vers Cloudinary
+    if (req.file && req.file.fieldname === 'photo') {
+      const { uploadImage } = require('../utils/cloudinary');
+      const photoResult = await uploadImage(req.file.buffer, 'idtrack/agents');
+      updateData.photo = photoResult.secure_url;
+    }
+
+    // Convertir les valeurs booléennes des checkboxes
+    const booleanFields = [
+      'arrete',
+      'commission_affectation_sg',
+      'commission_affectation_locale',
+      'notification_fonc_publique_ville',
+      'commission_local_fonc_publique_ville',
+      'notification_nu'
+    ];
+    
+    booleanFields.forEach(field => {
+      if (updateData[field] !== undefined) {
+        updateData[field] = updateData[field] === 'true' || updateData[field] === true || updateData[field] === '1' || updateData[field] === 1;
+      }
+    });
+
+    const result = await Database.updateAgent(id, updateData);
     
     // Si le QR code doit être régénéré (si nom, prenom ou categorie changent)
-    if (req.body.nom || req.body.prenom || req.body.categorie) {
+    if (updateData.nom || updateData.prenom || updateData.categorie) {
       const updatedAgent = await Database.getAgentById(id);
       if (updatedAgent) {
         const qrResult = await QRCodeGenerator.generateSecureQR({
